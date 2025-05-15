@@ -1,7 +1,6 @@
 requests==2.32.3
 anyio==4.9.0
 python-telegram-bot==22.0
-translate==1.10.2
-pip==23.2.1
+translate==3.6.1
 pytz==2025.2
 schedule==1.2.2
