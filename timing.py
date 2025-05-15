@@ -6,6 +6,7 @@ def get_current_time(api_key, city):
     try:
         url = f"http://api.timezonedb.com/v2.1/get-time-zone?key={api_key}&format=json&by=zone&zone={city}"
         response = requests.get(url)
+        # print(response.status_code)
         response.raise_for_status()
         time_data = response.json()
         if time_data and 'formatted' in time_data:
@@ -16,9 +17,13 @@ def get_current_time(api_key, city):
         return f"Ошибка при выполнении запроса: {e}"
 
 
-def time_for_city(town: str):
-    city = translation(town)
+def time_for_city(town: str, un_translated: str):
+    city = town
     stroke = city
+    if town == un_translated:
+        stroke = 'Что-то пошло не так....\nЯ попробую ещё раз'
+        return stroke
+    # print(town)
     if city[:6] == 'Ошибка':
         stroke = stroke + '\n' + 'Похоже вы ввели название города некорректно'
         return stroke
@@ -32,7 +37,7 @@ def time_for_city(town: str):
             current_time = 'Такого города нет'
 
     if current_time != 'Такого города нет':
-        stroke = f"Текущее время в городе {town}: {current_time}"
+        stroke = f"Текущее время в городе {un_translated}: {current_time}"
     else:
         stroke = current_time
     return stroke
