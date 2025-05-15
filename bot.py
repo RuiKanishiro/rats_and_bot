@@ -1,3 +1,4 @@
+import asyncio
 import datetime
 
 from library import *
@@ -9,8 +10,8 @@ from name_translator import translation
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
-menu_keyboard = ReplyKeyboardMarkup([['/today', '/for5days'], ['/time', '/other_city'], ['/register', '/start'], ['/help']], resize_keyboard=True, one_time_keyboard=True)
-other_city_keyboard = ReplyKeyboardMarkup([['/today', '/for5days'], ['/time', '/other_city'], ['/help']], resize_keyboard=True, one_time_keyboard=True)
+menu_keyboard = ReplyKeyboardMarkup([['/today', '/for5days'], ['/time', '/start'], ['/help']], resize_keyboard=True, one_time_keyboard=True)
+other_city_keyboard = ReplyKeyboardMarkup([['/today', '/for5days'], ['/time', '/help']], resize_keyboard=True, one_time_keyboard=True)
 register_keyboard = ReplyKeyboardMarkup([['/register']], resize_keyboard=True, one_time_keyboard=True)
 start_keyboard = ReplyKeyboardMarkup([['/start']], resize_keyboard=True, one_time_keyboard=True)
 user_data = {'LOCAL_CITY': '',
@@ -34,21 +35,7 @@ async def send_periodic_message(update: Update, context: CallbackContext) -> Non
             await update.message.reply_text(f"Ёмаё, уже {user_data['DATETIME']}")
             await predict_for_today(update, context)
             await asyncio.sleep(3600)
-        # print(data_hours, int(hours), data_minutes, int(minutes))
-
-
-# async def check(update: Update, context: CallbackContext):
-#     time_now = datetime.datetime.now()
-#     minutes = time_now.minute
-#     hours = time_now.hour
-#     if user_data['DATETIME'][:user_data['DATETIME'].find(':')] == minutes and user_data['DATETIME'][user_data['DATETIME'].find(':') + 1:] == hours:
-#         sticker = 'CAACAgIAAxkBAAEPGkhoJR_7FlasLoSVRyQlzKpaei_duQAC5ScAAnjYIUv9gmRGJesDATYE'
-#         await update.message.reply_sticker(sticker)
-#         await update.message.reply_text(f"Ёмаё, уже {user_data['DATETIME']}")
-#         await predict_for_today(update, context)
-#     while True:
-#         schedule.run_pending()
-#         time.sleep(30)
+        await asyncio.sleep(30)
 
 
 async def start(update: Update, context: CallbackContext) -> None:
@@ -61,11 +48,11 @@ async def start(update: Update, context: CallbackContext) -> None:
             reply_markup=register_keyboard
         )
     else:
-        await send_periodic_message(update, context)
+        asyncio.create_task(send_periodic_message(update, context))
         sticker = "CAACAgIAAxkBAAEPGj9oJRtDFfeVAz0aKNkZJkjwYIHLVgACeR0AAuwzgUolnQABxqkDfMI2BA"
         await update.message.reply_sticker(sticker)
         await update.message.reply_text(
-            'Йоу! Вы авторизованы. Выберите опцию из меню:',
+            'Йоу! Вы авторизованы. Теперь вам доступно много функций! По вопросам, связанными с функциями, вы можете обратится в функцию /help, которая лежит в меню:',
             reply_markup=menu_keyboard
         )
 
@@ -78,7 +65,7 @@ async def registration(update: Update, context: CallbackContext) -> None:
 async def get_name(update: Update, context: CallbackContext):
     user_data['NAME'] = update.message.text
     await update.message.reply_text(
-        f"Хорошо, {user_data['NAME']}!\nВ каком городе вы живете?"
+        f"Хорошо, {user_data['NAME']}!\nВ каком городе вы живете? Пишите на русском с большой буквы"
     )
     return 2
 
@@ -86,7 +73,7 @@ async def get_name(update: Update, context: CallbackContext):
 async def get_city(update: Update, context: CallbackContext):
     user_data['LOCAL_CITY'] = update.message.text
     await update.message.reply_text(
-        f"В какое время мне отправлять вам прогноз погоды г. {user_data['LOCAL_CITY']}?"
+        f"В какое время мне отправлять вам прогноз погоды г. {user_data['LOCAL_CITY']}?\nПишите часы и минуты через :, к примеру 15:00"
     )
     return 3
 
@@ -107,6 +94,12 @@ async def cancel(update: Update, context: CallbackContext):
     user_data['LOCAL_CITY'] = ''
     user_data['DATETIME'] = datetime
     return ConversationHandler.END
+
+
+# async def canceling(update: Update, context: CallbackContext):
+#     await update.message.reply_text('пупупу')
+#     CURRENT_CITY = ''
+#     return ConversationHandler.END
 
 
 async def predict_for_today(update: Update, context: CallbackContext):
@@ -158,38 +151,30 @@ async def predict_all(update: Update, context: CallbackContext):
     CURRENT_CITY = ''
 
 
-async def other_city(update: Update, context: CallbackContext):
-    await update.message.reply_text("Введите название города, погоду или время в котором вы хотите узнать", reply_markup=other_city_keyboard)
-    CURRENT_CITY = update.message.text
+# async def other_city(update: Update, context: CallbackContext):
+#     await update.message.reply_text("Введите название города, погоду или время в котором вы хотите узнать", reply_markup=other_city_keyboard)
+#     return 1
+
+
+# async def get_other_city(update: Update, context: CallbackContext):
+#     CURRENT_CITY = update.message.text
+#     await update.message.reply_text(f'Супер! Давайте узнаем что-то о городе {CURRENT_CITY}', reply_markup=other_city_keyboard)
+#     return ConversationHandler.END
 
 
 async def time_(update: Update, context: CallbackContext):
     global CURRENT_CITY
-    if CURRENT_CITY == '':
-        c_answ = user_data['LOCAL_CITY']
-        city = translation(user_data['LOCAL_CITY']).lower()
-    else:
-        c_answ = CURRENT_CITY
-        city = translation(CURRENT_CITY).lower()
-    stroke = ''
-    if city[:6] == 'Ошибка':
-        stroke = stroke + '\n' + 'Похоже вы ввели название города некорректно'
-        return stroke
-    c = city.replace('-', '_')
-    timezones = pytz.all_timezones
-    for i in timezones:
-        if c == i[i.rfind('/') + 1:]:
-            current_time = get_current_time(api_key_zones, i)
-            break
+    answer = 'Что-то пошло не так....\nЯ попробую ещё раз'
+    k = 0
+    while answer == 'Что-то пошло не так....\nЯ попробую ещё раз' and k < 10:
+        if CURRENT_CITY == '':
+            answer = time_for_city(translation(user_data['LOCAL_CITY']), user_data['LOCAL_CITY'])
         else:
-            current_time = 'Такого города нет'
-
-    if current_time != 'Такого города нет':
-        stroke = f"Текущее время в городе {c_answ}: {current_time}"
-    else:
-        stroke = current_time
-    await update.message.reply_text(stroke, reply_markup=menu_keyboard)
-    CURRENT_CITY = ''
+            answer = time_for_city(translation(CURRENT_CITY), CURRENT_CITY)
+        k += 1
+    if k == 10:
+        answer = 'Я очень сожалею, но у меня не получилось :('
+    await update.message.reply_text(answer)
 
 
 async def help_me(update: Update, context: CallbackContext):
@@ -197,6 +182,10 @@ async def help_me(update: Update, context: CallbackContext):
     sticker = "CAACAgIAAxkBAAEPGjdoJRaUJvsgxaU-BXKwWMZ8O4M3jwAClwADzxzAJU77Coy6YW8VNgQ"
     await update.message.reply_sticker(sticker)
     await update.message.reply_text(f"Имя: {user_data['NAME']}\nГород по умолчанию: {user_data['LOCAL_CITY']}\nВремя ежедневного прогноза погоды по умолчанию: {user_data['DATETIME']}")
+    await update.message.reply_text("Кнопка /time выводит время в городе по умолчанию или в написанном городе, если нажата после кнопки /other_city")
+    await update.message.reply_text("Кнопка /today выводит погоду на сегодня в городе по умолчанию или в написанном городе, если нажата после кнопки /other_city")
+    await update.message.reply_text("Кнопка /for5days выводит ближайший известный прогноз погоды в городе по умолчанию или в написанном городе, если нажата после кнопки /other_city")
+    await update.message.reply_text("Кнопка /other_city позволяет узнать информацию о городе, название которого вы введёте, но в данный момент она не работает по техническим причинам")
 
 
 def main() -> None:
@@ -211,11 +200,11 @@ def main() -> None:
         },
         fallbacks=[CommandHandler(['cancel'], cancel)],
     )
+
     application.add_handler(CommandHandler(["start"], start))
     application.add_handler(CommandHandler(["today"], predict_for_today))
     application.add_handler(CommandHandler(["for5days"], predict_all))
     application.add_handler(CommandHandler(["help"], help_me))
-    application.add_handler(CommandHandler(["other_city"], other_city))
     application.add_handler(CommandHandler(["time"], time_))
     application.add_handler(conv_handler)
 
