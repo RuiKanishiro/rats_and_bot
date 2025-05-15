@@ -20,10 +20,10 @@
 Были добавлены стикеры, чтобы бот выглядел веселее :)
 
 Библиотеки:
-requests=2.32.3
-asyncio=4.9.0
-python-telegram-bot=22.0
-translate=1.10.2
-pip=23.2.1
-pytz=2025.2
-schedule=1.2.2
+1. requests=2.32.3
+2. anyio=4.9.0
+3. python-telegram-bot=22.0
+4. translate=1.10.2
+5. pip=23.2.1
+6. pytz=2025.2
+7. schedule=1.2.2
